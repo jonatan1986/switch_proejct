@@ -3,7 +3,7 @@
 
 #include<vector>
 
-#include"client.h"
+#include"MessageRouter.h"
 //#include"client.cpp"
 
 using std::vector;
@@ -13,10 +13,10 @@ using std::endl;
 class Port
 {
 	static const size_t BACK_LOG = 5;
-	static const size_t LENGTH = 1024;		
+	static const size_t LENGTH = 1024;
 	public:
-	Port(const ConnectionData& _param);
-	
+	Port(const ConnectionData& _param, bool bDebug);
+
 	~Port();
 	void Listen();
 	private:
@@ -24,35 +24,37 @@ class Port
 	void InitFdSet();
 	void Select();
 	void Accept();
-	void TreatCurrentClients();
+	void TreatCurrentMessageRouters();
 
 	const string m_srcIp;
 	const int m_srcPort;
-	fd_set m_master;    
+	fd_set m_master;
     fd_set m_traverser;
 	struct sockaddr_in m_sin;
-	vector<Client* >m_clients;
+	vector<MessageRouter* >m_messageRouters;
 	int m_maxSd;
 	int m_optval;
-    int m_numOfClients;
+  int m_numOfMessageRouters;
 	int m_activity;
 	int m_slen;
 	int m_sockfd;
 	ConnectionData m_connectionsData;
+  bool m_bDebug;
 };
 /*============================================================================================================*/
-Port::Port(const ConnectionData& _param):
+Port::Port(const ConnectionData& _param, bool bDebug):
 m_connectionsData(_param),
 m_srcIp(_param.m_srcIp),
 m_srcPort(_param.m_srcPort),
 m_optval(1),
-m_numOfClients(0),
+m_numOfMessageRouters(0),
 m_activity(-1),
-m_slen(sizeof(m_sin))
+m_slen(sizeof(m_sin)),
+m_bDebug(bDebug)
 {
 	InitConnection();
 	InitFdSet();
-} 
+}
 /*============================================================================================================*/
 void Port::InitConnection()
 {
@@ -60,7 +62,7 @@ void Port::InitConnection()
 	if(m_sockfd < 0) /* should bigger/equal than/to 0. */
 	{
 		perror("socket failed");
-	} 
+	}
 	memset(&m_sin,0,sizeof(m_sin));
 	m_sin.sin_family = AF_INET;
 	m_sin.sin_port = htons(m_srcPort);
@@ -78,78 +80,72 @@ void Port::InitConnection()
 	{
 		perror("listen");
 	}
-	cout<<" port " <<m_srcPort<<" inits the connetion " <<endl;
-
+  if (m_bDebug)
+  {
+      cout<<" port " <<m_srcPort<<" inits the connetion " <<endl;
+  }
 }
 /*============================================================================================================*/
 void Port::InitFdSet()
 {
 	m_maxSd = m_sockfd;
-	FD_ZERO(&m_master); 
-	FD_ZERO(&m_traverser); 
+	FD_ZERO(&m_master);
+	FD_ZERO(&m_traverser);
 	FD_SET(m_sockfd,&m_master);
 }
 /*============================================================================================================*/
 void Port::Accept()
 {
-	int newSd;	
+	int newSd;
 	if( FD_ISSET(m_sockfd,&m_master) )
 	{
-			cout<<" Port::Accept() accepted new connection"<<endl;			
+      if (m_bDebug)
+      {
+  			cout<<" Port::Accept() accepted new connection"<<endl;
+      }
 			newSd =  accept(m_sockfd,(struct sockaddr *)&m_sin,(socklen_t*)&m_slen);
 			if( newSd > 0)
 			{
-				++m_numOfClients;
-				Client* client = new Client(newSd,m_connectionsData);
-				m_clients.push_back(client);
-				client->Run();
-			} 
+				++m_numOfMessageRouters;
+				MessageRouter* messageRouter = new MessageRouter(newSd,m_connectionsData,m_bDebug);
+				m_messageRouters.push_back(messageRouter);
+				messageRouter->Run();
+			}
 	}
 }
 /*============================================================================================================*/
 void Port::Select()
 {
 	m_traverser = m_master;
-	m_activity = select(m_maxSd+1,&m_traverser,NULL,NULL,NULL); 
+	m_activity = select(m_maxSd+1,&m_traverser,NULL,NULL,NULL);
 	if( m_activity < 0 && errno == EINTR)
 	{
 		perror("select");
-	} 
+	}
 }
 /*============================================================================================================*/
 
 void Port::Listen()
 {
-	int recvLen,sentBytes;	
+	int recvLen,sentBytes;
 	char buffer[LENGTH];
 	while(true)
 	{
 		Select();
 		Accept();
-	} 
+	}
 }
 
 
 Port::~Port()
 {
 
-	//TODO - wait for threads	
-	while(!m_clients.empty())
+	//TODO - wait for threads
+	while(!m_messageRouters.empty())
 	{
-		Client* clientToDelete = m_clients.back();
-		m_clients.pop_back();
-		delete clientToDelete;
-	} 
+		MessageRouter* messageRouterToDelete = m_messageRouters.back();
+		m_messageRouters.pop_back();
+		delete messageRouterToDelete;
+	}
 }
 #endif// __PORT_H__
-
-
-
-
-
-
-
-
-
-
-
