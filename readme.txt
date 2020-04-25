@@ -3,7 +3,7 @@ the aim of this project is to simulate a switch router: it has 3 sockets which g
 the 3 sockets route the messages to 3 mapped sockets(each source socket is mapped to a destination
 socket. the src socket sends messages to the destination socket and vice versa.
 
-how to the project.
+how to run the project.
 no need to compile: just fire up the application in command line : ./switch
 then select from "configfile.txt", source ip and port, and destination ip and port(each line
 represents src ip,src port, dest ip,dest port, respectively).
