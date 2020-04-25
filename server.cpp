@@ -137,10 +137,10 @@ void Server::Parse(const string& _configFileName)
 			connectionData->m_destPort = atoi((line.substr(startPos,pos-startPos)).c_str());
 			if (m_bDebug)
 			{
-				 cout<<"connectionData->m_srcIp "<<connectionData->m_srcIp<<endl;
-				 cout<<"connectionData->m_srcPort "<<connectionData->m_srcPort<<endl;
-				 cout<<"connectionData->m_destIp "<<connectionData->m_destIp<<endl;
-				 cout<<"connectionData->m_destPort "<<connectionData->m_destPort<<endl;
+				 cout<<" srcIp "<<connectionData->m_srcIp<<" and src Port "<<
+				 connectionData->m_srcPort<<" are mapped to: dest Ip "<<
+				 connectionData->m_destIp<<" and dest Port "<<connectionData->m_destPort
+				 <<endl;
 			}
 			m_ConnectionDatas.push_back(connectionData);
 			++numOfSockets;
