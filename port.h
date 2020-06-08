@@ -4,6 +4,8 @@
 #include<vector>
 
 #include"MessageRouter.h"
+#include "debug.h"
+#include "singletone.h"
 //#include"client.cpp"
 
 using std::vector;
@@ -15,7 +17,7 @@ class Port
 	static const size_t BACK_LOG = 5;
 	static const size_t LENGTH = 1024;
 	public:
-	Port(const ConnectionData& _param, bool bDebug);
+	Port(const ConnectionData& _param);
 
 	~Port();
 	void Listen();
@@ -39,18 +41,16 @@ class Port
 	int m_slen;
 	int m_sockfd;
 	ConnectionData m_connectionsData;
-  bool m_bDebug;
 };
 /*============================================================================================================*/
-Port::Port(const ConnectionData& _param, bool bDebug):
+Port::Port(const ConnectionData& _param):
 m_connectionsData(_param),
 m_srcIp(_param.m_srcIp),
 m_srcPort(_param.m_srcPort),
 m_optval(1),
 m_numOfMessageRouters(0),
 m_activity(-1),
-m_slen(sizeof(m_sin)),
-m_bDebug(bDebug)
+m_slen(sizeof(m_sin))
 {
 	InitConnection();
 	InitFdSet();
@@ -80,7 +80,7 @@ void Port::InitConnection()
 	{
 		perror("listen");
 	}
-  if (m_bDebug)
+  if (singletone<debug>::getinstance()->IsDebug())
   {
       cout<<" port " <<m_srcPort<<" inits the connetion " <<endl;
   }
@@ -99,7 +99,7 @@ void Port::Accept()
 	int newSd;
 	if( FD_ISSET(m_sockfd,&m_master) )
 	{
-      if (m_bDebug)
+      if (singletone<debug>::getinstance()->IsDebug())
       {
   			cout<<" Port::Accept() accepted new connection"<<endl;
       }
@@ -107,7 +107,7 @@ void Port::Accept()
 			if( newSd > 0)
 			{
 				++m_numOfMessageRouters;
-				MessageRouter* messageRouter = new MessageRouter(newSd,m_connectionsData,m_bDebug);
+				MessageRouter* messageRouter = new MessageRouter(newSd,m_connectionsData);
 				m_messageRouters.push_back(messageRouter);
 				messageRouter->Run();
 			}

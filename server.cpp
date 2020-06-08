@@ -14,13 +14,15 @@
 
 #include "server.h"
 #include "port.h"
+#include "debug.h"
+#include "singletone.h"
 using namespace std;
 
 #define debugFile "debug.txt"
 
-void threadfunc(ConnectionData *_connectionData,bool bDebug)
+void threadfunc(ConnectionData *_connectionData)
 {
-	Port  port(*_connectionData,bDebug);
+	Port  port(*_connectionData);
 	port.Listen();
 }
 
@@ -33,7 +35,7 @@ Server::Server(const string& _configFileName)
 	m_threads = new thread[m_numOfSockets];
 	for(int i = 0; i < m_numOfSockets; ++i)
 	{
-	   m_threads[i] = thread(threadfunc,ref(m_ConnectionDatas[i]),ref(m_bDebug));
+	   m_threads[i] = thread(threadfunc,ref(m_ConnectionDatas[i]));
 	}
 }
 
@@ -65,7 +67,7 @@ bool isPortValid(const string& _port)
 
 
 
-int hostname_to_ip(const string& hostname , string& ip,bool bDebug)
+int hostname_to_ip(const string& hostname , string& ip)
 {
     struct hostent *he;
     struct in_addr **addr_list;
@@ -74,14 +76,13 @@ int hostname_to_ip(const string& hostname , string& ip,bool bDebug)
     if ( (he = gethostbyname( hostname.c_str() ) ) == NULL)
     {
         // get the host info
-			if (bDebug)
+			if (singletone<debug>::getinstance()->IsDebug())
 			{
 					cout<<"hostname.c_str()"<<hostname.c_str() <<endl;
 			}
       herror("gethostbyname");
       return false;
     }
-
     addr_list = (struct in_addr **) he->h_addr_list;
 
     for(i = 0; addr_list[i] != NULL; i++)
@@ -124,7 +125,7 @@ void Server::Parse(const string& _configFileName)
 			if( line.substr(startPos,pos-startPos)[0] == 'w')
 			{
 				hostname = 	line.substr(startPos,pos-startPos);
-				hostname_to_ip(hostname,connectionData->m_destIp,m_bDebug);
+				hostname_to_ip(hostname,connectionData->m_destIp);
 			}
 			else
 			{
@@ -135,7 +136,9 @@ void Server::Parse(const string& _configFileName)
 			pos = line.find_first_of(endOfLine,startPos);
 			assert(isPortValid(line.substr(startPos,pos-startPos)));
 			connectionData->m_destPort = atoi((line.substr(startPos,pos-startPos)).c_str());
-			if (m_bDebug)
+
+
+			if (singletone<debug>::getinstance()->IsDebug())
 			{
 				 cout<<" srcIp "<<connectionData->m_srcIp<<" and src Port "<<
 				 connectionData->m_srcPort<<" are mapped to: dest Ip "<<

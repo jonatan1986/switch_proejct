@@ -4,6 +4,8 @@
 #include<iostream>
 #include<cstring>
 #include<fcntl.h>
+#include "debug.h"
+#include "singletone.h"
 using std::cout;
 using std::endl;
 
@@ -14,7 +16,7 @@ class MessageRouter
 	static const size_t LENGTH = 1024;
 	friend void* Connect(MessageRouter *_messageRouter);
 public:
-	MessageRouter(int _incSocket,const ConnectionData& _param, bool bDebug);
+	MessageRouter(int _incSocket,const ConnectionData& _param);
 	inline int GetSocket() { return m_incSocket; }
 	void Run();
 	void Wait();
@@ -38,12 +40,11 @@ private:
 
 
 
-MessageRouter::MessageRouter(int _incSocket,const ConnectionData& _param, bool bDebug):
+MessageRouter::MessageRouter(int _incSocket,const ConnectionData& _param):
 m_incSocket(_incSocket),
 m_destIp(_param.m_destIp),
 m_destPort(_param.m_destPort),
-m_flags(-1),
-m_bDebug(bDebug)
+m_flags(-1)
 {
 	InitMessageRouterConnection();
 	InitFdSet();
@@ -51,7 +52,7 @@ m_bDebug(bDebug)
 
 void MessageRouter::InitMessageRouterConnection()
 {
-	if (m_bDebug)
+	if (singletone<debug>::getinstance()->IsDebug())
 	{
 		cout<<"MessageRouter m_incsokcet "<<m_incSocket<<endl;
 		cout<<"MessageRouter m_destIp "<<m_destIp<<endl;
@@ -77,7 +78,7 @@ void MessageRouter::InitMessageRouterConnection()
 	{
 		perror("connect");
 	}
-	else if (m_bDebug)
+	else if (singletone<debug>::getinstance()->IsDebug())
 	{
 		cout<<"connection succeeded"<<endl;
 	}
@@ -98,7 +99,7 @@ void* Connect(MessageRouter *_messageRouter)
 	// MessageRouter *tempMessageRouter = reinterpret_cast<MessageRouter*>(_param);
 	memset(message,0,sizeof(message));
 	memset(buffer,0,sizeof(buffer));
-	if (_messageRouter->m_bDebug)
+	if (singletone<debug>::getinstance()->IsDebug())
 	{
 		cout<<"m_incSocket "<<_messageRouter->m_incSocket<<endl;
 		cout<<"m_OutGoingSocket "<<_messageRouter->m_OutGoingSocket<<endl;
